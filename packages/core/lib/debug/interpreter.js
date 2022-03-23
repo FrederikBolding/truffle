@@ -3,7 +3,6 @@ const debug = debugModule("lib:debug:interpreter");
 
 const path = require("path");
 const util = require("util");
-const ora = require("ora");
 
 const DebugUtils = require("@truffle/debug-utils");
 const selectors = require("@truffle/debugger").selectors;
@@ -14,6 +13,8 @@ const analytics = require("../services/analytics");
 const repl = require("repl");
 
 const { DebugPrinter } = require("./printer");
+
+const spinners = require("@truffle/spinners");
 
 function watchExpressionAnalytics(raw) {
   if (raw.includes("!<")) {
@@ -366,7 +367,7 @@ class DebugInterpreter {
     // If not finished, perform commands that require state changes
     // (other than quitting or resetting)
     if (!alreadyFinished) {
-      let stepSpinner = ora("Stepping...").start();
+      spinners.add("debug-step-spinner", "Stepping...");
       switch (cmd) {
         case "o":
           await this.session.stepOver();
@@ -398,7 +399,7 @@ class DebugInterpreter {
           await this.session.continueUntilBreakpoint();
           break;
       }
-      stepSpinner.stop();
+      spinners.remove("debug-step-spinner");
     } //otherwise, inform the user we can't do that
     else {
       switch (cmd) {
@@ -437,10 +438,10 @@ class DebugInterpreter {
               stacktrace.current.innerErrorIndex
             );
             if (errorIndex !== null) {
-              const stepSpinner = ora("Stepping...").start();
+              spinners.add("debug-step-spinner", "Stepping...");
               await this.session.reset();
               await this.session.advance(errorIndex);
-              stepSpinner.stop();
+              spinners.remove("debug-step-spinner");
             } else {
               this.printer.print("No error to return to.");
             }
@@ -467,10 +468,10 @@ class DebugInterpreter {
           stacktrace.current.innerErrorIndex
         );
         if (errorIndex !== null) {
-          const stepSpinner = ora("Stepping...").start();
+          spinners.add("debug-step-spinner", "Stepping...");
           await this.session.reset();
           await this.session.advance(errorIndex);
-          stepSpinner.stop();
+          spinners.remove("debug-step-spinner");
         } else {
           this.printer.print("No previous error to return to.");
         }
@@ -482,15 +483,16 @@ class DebugInterpreter {
     if (cmd === "t") {
       if (!this.fetchExternal) {
         if (!this.session.view(session.status.loaded)) {
-          let txSpinner = ora(
+          spinners.add(
+            "debug-tx-spinner",
             DebugUtils.formatTransactionStartMessage()
-          ).start();
+          );
           try {
             await this.session.load(cmdArgs);
-            txSpinner.succeed();
+            spinners.succeed("debug-tx-spinner");
             this.repl.setPrompt(DebugUtils.formatPrompt(this.network, cmdArgs));
           } catch (_) {
-            txSpinner.fail();
+            spinners.fail("debug-tx-spinner");
             loadFailed = true;
           }
         } else {

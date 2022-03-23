@@ -1,3 +1,5 @@
+const spinners = require("@truffle/spinners");
+
 /**
  *  A module that formats output for the Migrations reporter.
  */
@@ -219,8 +221,8 @@ class Messages {
 
       deployed: () => {
         let stopText;
-        if (reporter.blockSpinner) {
-          reporter.blockSpinner.stop();
+        if (spinners.pick("migration-reporter")) {
+          spinners.remove("migration-reporter");
           stopText = `   > ${reporter.currentBlockWait}`;
         }
 
@@ -275,7 +277,9 @@ class Messages {
 
       // Transactions
       endTransaction: () => {
-        if (reporter.blockSpinner) reporter.blockSpinner.stop();
+        if (spinners.pick("migration-reporter")) {
+          spinners.remove("migration-reporter");
+        }
         return `   > ${data.message}`;
       },
 

@@ -1,8 +1,7 @@
 const debug = require("debug")("reporters:migrations:reporter"); // eslint-disable-line no-unused-vars
 const web3Utils = require("web3-utils");
-const ora = require("ora");
+const spinners = require("@truffle/spinners");
 
-const indentedSpinner = require("./indentedSpinner");
 const Messages = require("./Messages");
 
 /**
@@ -25,7 +24,6 @@ class Reporter {
     this.separator = "\n";
     this.summary = [];
     this.currentFileIndex = -1;
-    this.blockSpinner = null;
     this.currentBlockWait = "";
     this.subscriber = subscriber;
 
@@ -210,8 +208,9 @@ class Reporter {
     this.currentBlockWait =
       `Blocks: ${data.blocksWaited}`.padEnd(21) +
       `Seconds: ${data.secondsWaited}`;
-    if (this.blockSpinner) {
-      this.blockSpinner.text = this.currentBlockWait;
+
+    if (spinners.pick("migration-reporter")) {
+      spinners.updateText("migration-reporter", this.currentBlockWait);
     }
   }
 
@@ -264,8 +263,8 @@ class Reporter {
    * @return {Promise}       resolves string error message
    */
   async deployFailed(data) {
-    if (this.blockSpinner) {
-      this.blockSpinner.stop();
+    if (spinners.pick("migration-reporter")) {
+      spinners.stop("migration-reporter");
     }
     return await this.processDeploymentError(data);
   }
@@ -279,12 +278,11 @@ class Reporter {
    */
   async startTransaction(data) {
     const message = data.message || "Starting unknown transaction...";
-    this.blockSpinner = new ora({
+    spinners.add("migration-reporter", {
       text: message,
-      spinner: indentedSpinner,
+      indent: 3,
       color: "red"
     });
-    this.blockSpinner.start();
   }
 
   /**
@@ -325,13 +323,11 @@ class Reporter {
 
     this.currentBlockWait = `Blocks: 0`.padEnd(21) + `Seconds: 0`;
 
-    this.blockSpinner = new ora({
+    spinners.add("migration-reporter", {
       text: this.currentBlockWait,
-      spinner: indentedSpinner,
+      indent: 3,
       color: "red"
     });
-
-    this.blockSpinner.start();
   }
 
   /**

@@ -1,4 +1,4 @@
-const ora = require("ora");
+const spinners = require("@truffle/spinners");
 
 module.exports = {
   initialization: function () {
@@ -13,12 +13,10 @@ module.exports = {
           // TODO: Do we care about ID collisions?
           this.pendingTransactions[payload.id] = payload;
 
-          this.spinner = ora({
+          spinners.add("dashboard-handler", {
             text: `Waiting for transaction signature. Please check your wallet for a transaction approval message.`,
             color: "red"
           });
-
-          this.spinner.start();
         }
       }
     ],
@@ -31,13 +29,9 @@ module.exports = {
           if (error) {
             const errMessage = `Transaction submission failed with error ${error.code}: '${error.message}'`;
 
-            if (this.spinner && this.spinner.isSpinning) {
-              this.spinner.fail(errMessage);
-            }
+            spinners.fail("dashboard-handler", errMessage);
           } else {
-            if (this.spinner && this.spinner.isSpinning) {
-              this.spinner.stop();
-            }
+            spinners.remove("dashboard-handler");
           }
 
           delete this.pendingTransactions[payload.id];
